@@ -20,8 +20,11 @@ func InitSecretKey() {
 	if f_err != nil {
 		_, e := rand.Read(SECRET_KEY)
 		f, err := os.Create(".SECRET_KEY")
+		if err != nil {
+			log.Fatal(err)
+		}
 		_, e1 := f.Write(SECRET_KEY)
-		if e != nil || err != nil || e1 != nil {
+		if e != nil || e1 != nil {
 			log.Fatal(e)
 		}
 
@@ -30,8 +33,11 @@ func InitSecretKey() {
 		if err2 != nil {
 			_, e := rand.Read(SECRET_KEY)
 			f, err := os.Create(".SECRET_KEY")
+			if err != nil {
+				log.Fatal(err)
+			}
 			_, e1 := f.Write(SECRET_KEY)
-			if e != nil || err != nil || e1 != nil {
+			if e != nil || e1 != nil {
 				log.Fatal(e)
 			}
 

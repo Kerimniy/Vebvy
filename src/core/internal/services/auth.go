@@ -21,7 +21,6 @@ func checkAdmin(w http.ResponseWriter, r *http.Request) bool {
 
 func GetUser(w http.ResponseWriter, r *http.Request) {
 
-
 	if r.Header.Get("Origin") != os.Getenv("FRONTEND") {
 		w.WriteHeader(403)
 		return
@@ -39,7 +38,6 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	email := getSignedCookie(r, w)
 	user := models.User{}
 	err := db.Db.Where("email= ?", email).First(&user).Error
-
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		w.WriteHeader(401)
@@ -241,10 +239,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func Logout(w http.ResponseWriter, r *http.Request) {
-	
-	fmt.Println(getSignedCookie(r,w))
 	deleteCookie(w)
-
 }
 
 func Change_password(w http.ResponseWriter, r *http.Request) {

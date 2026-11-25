@@ -1,12 +1,10 @@
 # Core structure
 
 ```
-
 .
 ├── cmd
 │   └── vebvy
 │       └── main.go
-├── data
 ├── go.mod
 ├── go.sum
 ├── internal
@@ -21,15 +19,12 @@
 │   │   ├── confirm_code.go
 │   │   ├── crypt.go
 │   │   ├── git.go
-│   │   ├── mail.go
 │   │   └── manage_files.go
 │   └── transport
 │       └── handlers.go
 ├── pkg
 │   └── tgbot
 │       └── telegram-bot.go
-└── README.md
-
-
+├── README.md
 
 ```

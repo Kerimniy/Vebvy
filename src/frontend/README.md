@@ -51,6 +51,7 @@ export const HEADER_ICON_PATH ="/favicon.svg" // icon in header
 │   ├── caching.ts
 │   ├── manage.ts
 │   ├── monaco-setup.ts
+│   ├── status.ts
 │   ├── toc-store.ts
 │   ├── user.ts
 │   └── utils.ts

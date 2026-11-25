@@ -14,6 +14,18 @@ import (
 	"kerimniy.qzz.io/vebvy/internal/models"
 )
 
+func Admin_exist() config.AdminStruct {
+	var user models.User
+
+	err := db.Db.Limit(1).First(&user).Error
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return config.AdminStruct{Exist: false}
+	}
+
+	return config.AdminStruct{Email: user.Email, Exist: true}
+}
+
 func checkAdmin(w http.ResponseWriter, r *http.Request) bool {
 
 	return getSignedCookie(r, w) == config.Admin.Email

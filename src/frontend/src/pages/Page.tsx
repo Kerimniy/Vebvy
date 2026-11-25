@@ -155,7 +155,7 @@ function SignIn({
             return (
                 <Button variant="outline"
                     onClick={() => {
-                        authService.logout(() => { window.location.reload() })
+                        authService.logout()
                     }}
                 >
                     <LogOut />
@@ -221,7 +221,7 @@ export default function Page({ backendStatus }: { backendStatus: boolean }) {
                         <Routes>
                             <Route path="/*" element={<Content />}></Route>
                             <Route path="/-/settings" element={<RequireAuth><AccountPage></AccountPage></RequireAuth>}></Route>
-                            <Route path="/-/edit" element={<RequireAuth><EditorPage></EditorPage></RequireAuth>}></Route>
+                            <Route path="/-/edit" element={<RequireAuth><EditorPage setStatus={setStatus}></EditorPage></RequireAuth>}></Route>
                             <Route path="/-/index" element={<IndexPage></IndexPage>}></Route>
                             <Route path="/-/auth/*" element={<AuthPage></AuthPage>}></Route>
                         </Routes>

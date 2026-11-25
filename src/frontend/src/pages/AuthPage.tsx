@@ -12,7 +12,6 @@ import { PasswordInput } from "@/components/PasswordInput";
 import { Loader2 } from "lucide-react";
 import { useAuth } from '@/components/Auth';
 
-import type { RegisterData, ResetPasswordData, LoginData } from "@/lib/user"
 import { authService } from "@/lib/user"
 import { useNavigate } from 'react-router-dom';
 export default function AuthPage() {

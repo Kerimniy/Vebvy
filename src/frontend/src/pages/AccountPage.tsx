@@ -6,7 +6,6 @@ import {
 } from "../components/ui/card";
 import { PasswordInput } from "@/components/PasswordInput";
 import { Loader2 } from "lucide-react";
-import type { ChangePasswordData } from "@/lib/user"
 import { authService } from "@/lib/user"
 import { useNavigate } from "react-router-dom";
 

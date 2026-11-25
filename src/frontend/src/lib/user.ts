@@ -1,68 +1,26 @@
-import { BACKEND_BASE_URL } from "@/config";
+import { BACKEND_BASE_URL } from "@/config"
 
-export interface UserStruct {
-  email: string;
-  createdAt: string;
+export interface UserStruct { email: string; createdAt: string }
+export interface RegisterData { email: string; password: string; code: string }
+export interface LoginData { email: string; password: string }
+export interface ChangePasswordData { currentPassword: string; newPassword: string }
+export interface ResetPasswordData { email: string; code: string; newPassword: string }
 
-}
-
-
-export interface RegisterData {
-  email: string;
-  password: string;
-  code: string;
-}
-
-export interface LoginData {
-  email: string;
-  password: string;
-}
-
-export interface ChangePasswordData {
-  currentPassword: string;
-  newPassword: string;
-}
-
-export interface ResetPasswordData {
-  email: string;
-  code: string;
-  newPassword: string;
-}
-
-export interface ChangeUserStatus {
-  newstatus: string,
-  email: string
-}
-function logout(on_finish: () => void) {
-  fetch(`${BACKEND_BASE_URL}/auth/logout`, {credentials: "include"}).then(_ => {
-    on_finish()
-  })
-
-
-}
-
-
-export async function sendRequest<T>(url: string, data: T): Promise<any> {
-
-
+export async function sendRequest<T>(url: string, data: T): Promise<unknown> {
   const response = await fetch(url, {
     credentials: "include",
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
-  });
-
+  })
   if (!response.ok) {
-    const errorText = await response.text().catch(() => "Server error");
-    return {"content":errorText, "ok":response.ok};
+    const errorText = await response.text().catch(() => "")
+    throw new Error(errorText || `Request error: ${response.status}`)
   }
-
   if (response.headers.get("content-type")?.includes("application/json")) {
-    return {"content":response.json(), "ok":response.ok};
+    return await response.json()
   }
-  return {"content":response.text(), "ok":response.ok};
+  return await response.text()
 }
 
 export const authService = {
@@ -70,7 +28,19 @@ export const authService = {
   login: (data: LoginData) => sendRequest(`${BACKEND_BASE_URL}/auth/login`, data),
   changePassword: (data: ChangePasswordData) => sendRequest(`${BACKEND_BASE_URL}/auth/change`, data),
   resetPassword: (data: ResetPasswordData) => sendRequest(`${BACKEND_BASE_URL}/auth/reset`, data),
-  deleteAccount: () => { fetch(`${BACKEND_BASE_URL}/auth/delete`) },
-  sendCode: async () => { return fetch(`${BACKEND_BASE_URL}/auth/code`) },
-  logout: (on_finish: () => void) => { logout(on_finish) },
-};
+
+  sendCode: async (): Promise<void> => {
+    const res = await fetch(`${BACKEND_BASE_URL}/auth/code`)
+    if (!res.ok) {
+      const text = await res.text().catch(() => "")
+      throw new Error(text || `Request error: ${res.status}`)
+    }
+  },
+
+  logout: async (): Promise<void> => {
+    try {
+      await fetch(`${BACKEND_BASE_URL}/auth/logout`, { credentials: "include" })
+    } catch {
+    }
+  },
+}

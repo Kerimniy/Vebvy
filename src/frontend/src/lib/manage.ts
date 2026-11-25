@@ -1,55 +1,32 @@
-import { BACKEND_BASE_URL } from "@/config";
-import type { Message } from "@/pages/Page";
-import { trimSlashes } from "./utils";
-import { deletePageCache } from "./caching";
+import { BACKEND_BASE_URL } from "@/config"
+import { trimSlashes } from "./utils"
+import { deletePageCache } from "./caching"
 
-export async function deleteRequest(file: string): Promise<any> {
-
-
-    const response = await fetch(`${BACKEND_BASE_URL}/manage/delete?file=${encodeURI(file)}`, {
-        credentials: "include",
-        method: "DELETE",
-    });
-
+async function throwIfError(response: Response): Promise<void> {
     if (!response.ok) {
-        const errorText = await response.text().catch(() => "Server error");
-        throw new Error(errorText || `Request error: ${response.status}`);
+        const errorText = await response.text().catch(() => "")
+        throw new Error(errorText || `Request error: ${response.status}`)
     }
-
-    deletePageCache(file)
-
-    if (response.headers.get("content-type")?.includes("application/json")) {
-        return {"content":response.json(),"ok": response.ok};
-    }
-    return {"content":response.text(),"ok": response.ok};
 }
 
-export async function renameRequest(file: string, newName: string): Promise<Message> {
+export async function deleteRequest(file: string): Promise<void> {
+    const name = trimSlashes(file) || "index"
+    const response = await fetch(
+        `${BACKEND_BASE_URL}/manage/delete?file=${encodeURIComponent(name)}`,
+        { credentials: "include", method: "DELETE" },
+    )
+    await throwIfError(response)
+    deletePageCache(name)
+}
 
-    file= trimSlashes(file)
-    newName = trimSlashes(newName)
-
-    if (file==""){
-        file="index"
-    } 
-
-    if (newName==""){
-        newName="index"
-    } 
-
-    const response = await fetch(`${BACKEND_BASE_URL}/manage/rename?file=${encodeURI(file)}&name=${encodeURI(newName)}`, {
-        credentials: "include",
-        method: "POST",
-    });
-
-    let errorText = ""
-
-    if (!response.ok) {
-        errorText = await response.text().catch(() => "Server error");
-        
-    }
-
-    deletePageCache(file)
-    
-    return {"isError":!response.ok,"value":errorText};
+export async function renameRequest(file: string, newName: string): Promise<void> {
+    const from = trimSlashes(file) || "index"
+    const to = trimSlashes(newName) || "index"
+    const response = await fetch(
+        `${BACKEND_BASE_URL}/manage/rename?file=${encodeURIComponent(from)}&name=${encodeURIComponent(to)}`,
+        { credentials: "include", method: "POST" },
+    )
+    await throwIfError(response)
+    deletePageCache(from)
+    deletePageCache(to)
 }

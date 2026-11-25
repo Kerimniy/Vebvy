@@ -1,138 +1,153 @@
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
-import { Button } from "./ui/button";
-import { Copy, Trash, EllipsisVertical, Plus, Pencil, Loader2, FilePen } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
+import { Button } from "./ui/button"
+import { Copy, Trash, EllipsisVertical, Plus, Pencil, Loader2, FilePen } from "lucide-react"
+import { useLocation, useNavigate } from "react-router-dom"
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
+    AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+    AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { deleteRequest, renameRequest } from "@/lib/manage";
-import { Input } from "./ui/input";
-import { useState } from "react";
-import { setNewStatus, type Message } from "@/pages/Page";
-import { useAuth } from "./Auth";
+import { deleteRequest, renameRequest } from "@/lib/manage"
+import { Input } from "./ui/input"
+import { useState, type Dispatch, type SetStateAction } from "react"
+import { setNewStatus, type Message } from "@/lib/status"
+import { useAuth } from "./Auth"
+import { trimSlashes } from "@/lib/utils"
 
+export function ContextMenu({ setStatus, backendStatus }: {
+    setStatus: Dispatch<SetStateAction<Message | null>>
+    backendStatus: boolean
+}) {
+    const navigate = useNavigate()
+    const location = useLocation()
 
-
-
-export function ContextMenu({ setStatus, backendStatus }: { setStatus: React.Dispatch<React.SetStateAction<Message | null>>, backendStatus: boolean }) {
-    let navigate = useNavigate()
-
-    let [newName, setNewName] = useState("")
-
-    const [isRenaming, setIsRenaming] = useState(false)
+    const [menuOpen, setMenuOpen] = useState(false)
+    const [newName, setNewName] = useState("")
     const [openRename, setOpenRename] = useState(false)
+    const [isRenaming, setIsRenaming] = useState(false)
+    const [isDeleting, setIsDeleting] = useState(false)
 
+    const { user } = useAuth()
     const isInternalPage = location.pathname.startsWith("/-/")
+    const canEdit = !isInternalPage && backendStatus && user != null
 
-    let {user} = useAuth()
+    const handleDelete = async () => {
+        setIsDeleting(true)
+        try {
+            await deleteRequest(location.pathname)
+            setNewStatus("Page deleted", false, setStatus)
+            setMenuOpen(false)
+            navigate("/")
+        } catch (err) {
+            setNewStatus(err instanceof Error ? err.message : "Delete failed", true, setStatus)
+        } finally {
+            setIsDeleting(false)
+        }
+    }
+
+    const handleRename = async () => {
+        setIsRenaming(true)
+        try {
+            await renameRequest(location.pathname, newName)
+            setOpenRename(false)
+            setMenuOpen(false)
+            setNewStatus("Page renamed", false, setStatus)
+            const target = trimSlashes(newName) || "index"
+            navigate(target === "index" ? "/" : "/" + target)
+        } catch (err) {
+            setNewStatus(err instanceof Error ? err.message : "Rename failed", true, setStatus)
+        } finally {
+            setIsRenaming(false)
+        }
+    }
 
     return (
-        <Popover>
-            <PopoverTrigger>
-                <Button variant="outline"><EllipsisVertical></EllipsisVertical></Button>
-            </PopoverTrigger>
+        <Popover open={menuOpen} onOpenChange={setMenuOpen}>
+            <PopoverTrigger render={
+                <Button variant="outline" aria-label="Page actions"><EllipsisVertical /></Button>
+            } />
             <PopoverContent className="w-fit">
-
-                <Button variant="ghost" className={"flex flex-row gap-3 justify-start"} key={"copy"} onClick={() => navigator.clipboard.writeText(window.location.href)}>
-                    <Copy />
-                    <span>{"Copy link"}</span>
+                <Button variant="ghost" className="flex flex-row gap-3 justify-start"
+                    onClick={() => {
+                        navigator.clipboard.writeText(window.location.href).catch(() => { })
+                        setMenuOpen(false)
+                    }}>
+                    <Copy /><span>Copy link</span>
                 </Button>
 
-
-                {(!isInternalPage && backendStatus && user!=null) &&
+                {canEdit && (
                     <AlertDialog>
                         <AlertDialogTrigger render={
-                            <Button variant="ghost" className={"flex flex-row gap-3 justify-start"}>
-                                <Trash />
-                                <span>Delete</span>
+                            <Button variant="ghost" className="flex flex-row gap-3 justify-start">
+                                <Trash /><span>Delete</span>
                             </Button>
-                        }>
-                            Show Dialog
-                        </AlertDialogTrigger>
+                        } />
                         <AlertDialogContent>
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    This action cannot be undone.
+                                    The page will be removed from the wiki (history stays in Git).
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => { deleteRequest(location.pathname).then(res => { if (res.ok) { window.location.href = "/" } }) }}>Continue</AlertDialogAction>
+                                <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
+                                    {isDeleting ? <Loader2 className="animate-spin" /> : "Continue"}
+                                </AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
-                }
-                {(!isInternalPage && backendStatus && user != null) &&
-                    <AlertDialog open={openRename}>
+                )}
 
-                        <AlertDialogTrigger onClick={() => { setOpenRename(!openRename); setNewName(location.pathname) }} render={
-                            <Button variant="ghost" className={"flex flex-row gap-3 justify-start"}>
-                                <Pencil />
-                                <span>Rename</span>
+                {canEdit && (
+                    <AlertDialog open={openRename}
+                        onOpenChange={(open) => { if (!isRenaming) setOpenRename(open) }}>
+                        <AlertDialogTrigger render={
+                            <Button variant="ghost" className="flex flex-row gap-3 justify-start"
+                                onClick={() => { setNewName(location.pathname); setOpenRename(true) }}>
+                                <Pencil /><span>Rename</span>
                             </Button>
-                        }>
-                        </AlertDialogTrigger>
+                        } />
                         <AlertDialogContent>
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Rename</AlertDialogTitle>
                                 <AlertDialogDescription className="w-full">
                                     <div className="flex flex-col gap-4 w-full">
-
-                                        <p className="text-center w-full">This action cannot be undone.</p>
-
-                                        <Input value={newName} onInput={(e) => { setNewName(e.currentTarget.value) }} className="w-full" placeholder="New filename" />
-
+                                        <p className="text-center w-full">Enter a new path for the page.</p>
+                                        <Input value={newName}
+                                            onChange={(e) => setNewName(e.currentTarget.value)}
+                                            className="w-full" placeholder="New filename"
+                                            disabled={isRenaming} />
                                     </div>
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                                <AlertDialogCancel onClick={()=>setOpenRename(false)} disabled={isRenaming}>Cancel</AlertDialogCancel>
-                                <Button variant="default" onClick={async () => {
-                                    setIsRenaming(true)
-                                    let res = await renameRequest(location.pathname, newName)
-                                    if (!res.isError) {
-                                        navigate(newName)
-                                    }
-                                    else {
-                                        setNewStatus(res.value, true, setStatus)
-                                    }
-                                    setIsRenaming(false)
-                                    setOpenRename(false)
-                                }
-                                }>{isRenaming ? (
-                                    <>
-                                        <Loader2 className="animate-spin" />
-                                        Renaming...
-                                    </>
-                                ) : (
-                                    "Continue"
-                                )}</Button>
+                                <AlertDialogCancel disabled={isRenaming}>Cancel</AlertDialogCancel>
+                                <Button onClick={handleRename}
+                                    disabled={isRenaming || trimSlashes(newName) === ""}>
+                                    {isRenaming
+                                        ? (<><Loader2 className="animate-spin" />Renaming...</>)
+                                        : "Continue"}
+                                </Button>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
-                }
+                )}
 
-                {backendStatus && user != null &&
-                    <Button variant="ghost" className={"flex flex-row gap-3 justify-start"} key={"copy"} onClick={() => navigate(`/-/edit`)}>
-                        <Plus />
-                        <span>{"Create"}</span>
-                    </Button>}
-                {(!isInternalPage && user != null && backendStatus) &&
-                    <Button variant="ghost" className={"flex flex-row gap-3 justify-start"} key={"copy"} onClick={() => navigate(`/-/edit?page=${location.pathname}`)}>
-                        <FilePen />
-                        <span>{"Edit"}</span>
+                {backendStatus && user != null && (
+                    <Button variant="ghost" className="flex flex-row gap-3 justify-start"
+                        onClick={() => { setMenuOpen(false); navigate("/-/edit") }}>
+                        <Plus /><span>Create</span>
                     </Button>
-                }
+                )}
+                {canEdit && (
+                    <Button variant="ghost" className="flex flex-row gap-3 justify-start"
+                        onClick={() => {
+                            setMenuOpen(false)
+                            navigate(`/-/edit?page=${encodeURIComponent(location.pathname)}`)
+                        }}>
+                        <FilePen /><span>Edit</span>
+                    </Button>
+                )}
             </PopoverContent>
         </Popover>
     )

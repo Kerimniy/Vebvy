@@ -9,79 +9,52 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 
 
 interface TreeNode {
-    name: string;
-    path: string;
-    children: TreeNode[];
+    name: string
+    path: string
+    isFile: boolean
+    children: TreeNode[]
 }
-
 
 
 
 type AlphabetTree = Record<string, TreeNode[]>;
 
-function buildTree(
-    files: Record<string, boolean>
-): AlphabetTree {
-    const roots: TreeNode[] = [];
-
-    for (const [path] of Object.entries(files)) {
-        const parts = path.split("/").filter(Boolean);
-
-        if (parts.length === 0) continue;
-
-        let currentPath = "";
-        let siblings = roots;
-
+function buildTree(files: Record<string, boolean>): AlphabetTree {
+    const roots: TreeNode[] = []
+    for (const [path, registered] of Object.entries(files)) {
+        if (!registered) continue
+        const parts = path.split("/").filter(Boolean)
+        if (parts.length === 0) continue
+        let currentPath = ""
+        let siblings = roots
         for (let i = 0; i < parts.length; i++) {
-            const name = parts[i];
-            currentPath += "/" + name;
-
-            let node = siblings.find(
-                item => item.name === name
-            );
-
+            const name = parts[i]
+            currentPath += "/" + name
+            let node = siblings.find((item) => item.name === name)
             if (!node) {
-                node = {
-                    name,
-                    path: currentPath,
-                    children: [],
-                };
-                siblings.push(node);
+                node = { name, path: currentPath, isFile: false, children: [] }
+                siblings.push(node)
             }
-
-            siblings = node.children;
+            if (i === parts.length - 1) node.isFile = true
+            siblings = node.children
         }
-
-
     }
 
     function sortNodes(nodes: TreeNode[]): void {
-        nodes.sort((a, b) =>
-            a.name.localeCompare(b.name)
-        );
-
-        for (const node of nodes) {
-            sortNodes(node.children);
-        }
+        nodes.sort((a, b) => a.name.localeCompare(b.name))
+        for (const node of nodes) sortNodes(node.children)
     }
+    sortNodes(roots)
 
-    sortNodes(roots);
-
-    const result: AlphabetTree = {};
-
+    const result: AlphabetTree = {}
     for (const node of roots) {
-        const letter = node.name[0].toLocaleUpperCase();
-
-        (result[letter] ??= []).push(node);
+        const letter = node.name[0].toLocaleUpperCase()
+            ; (result[letter] ??= []).push(node)
     }
-
     return Object.fromEntries(
-        Object.entries(result).sort(([a], [b]) =>
-            a.localeCompare(b)
-        )
-    );
+        Object.entries(result).sort(([a], [b]) => a.localeCompare(b))
+    )
 }
-
 export default function IndexPage() {
     const location = useLocation()
 
@@ -97,7 +70,7 @@ export default function IndexPage() {
                     const resp = await fetch(`${REPO_BASE_URL}/index.json`, { signal: ctrl.signal })
                     if (!resp.ok && resp.status !== 404) throw new Error(`HTTP ${resp.status}`)
                     else if (resp.status == 404) {
-                        setContent({"":[{name: "No Index for now", path:'',children:[]}]})
+                        setContent({"":[{name: "No Index for now", path:'',children:[], isFile: true}]})
                     }
                     else {
                         setContent(buildTree(resp.ok ? await resp.json() : {}))
@@ -132,54 +105,54 @@ export default function IndexPage() {
 
 }
 
-
 function TreeItem({ node }: { node: TreeNode }) {
-    const [open, setOpen] = useState(false);
-    const isFolder = node.children.length > 0;
+    const [open, setOpen] = useState(false)
+    const hasChildren = node.children.length > 0
+
+    const label = (
+        <>
+            {hasChildren
+                ? <Folder className="size-4 shrink-0 text-amber-500" />
+                : <Newspaper className="size-4 shrink-0 text-muted-foreground" />}
+            <span className="truncate">{node.name}</span>
+        </>
+    )
 
     return (
         <div className="select-none">
-            {isFolder ? (
-                <Collapsible open={open} onOpenChange={setOpen}>
-                    <CollapsibleTrigger>
-                        <Button
-                            variant="ghost"
-                            className="h-8 w-full justify-start gap-2 px-2 font-normal"
-                        >
-                            <ChevronRight
-                                className={`size-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-90" : ""
-                                    }`}
-                            />
-                            <Folder className="size-4 shrink-0 text-amber-500" />
-                            <span className="truncate">{node.name}</span>
-                            <span className="ml-auto text-xs text-muted-foreground">
-                                {node.children.length}
-                            </span>
-                        </Button>
-                    </CollapsibleTrigger>
+            <Collapsible open={open} onOpenChange={setOpen}>
+                <div className="flex items-center gap-1">
+                    {hasChildren ? (
+                        <CollapsibleTrigger render={
+                            <Button variant="ghost" className="h-8 w-6 shrink-0 justify-center px-0"
+                                aria-label={open ? "Collapse" : "Expand"}>
+                                <ChevronRight className={`size-4 text-muted-foreground transition-transform ${open ? "rotate-90" : ""}`} />
+                            </Button>
+                        } />
+                    ) : <span className="w-6 shrink-0" />}
 
-                    <CollapsibleContent>
-                        <div className="ml-4 border-l pl-3">
-                            {node.children.map((child) => (
-                                <TreeItem key={child.path} node={child} />
-                            ))}
-                        </div>
-                    </CollapsibleContent>
-                </Collapsible>
-            ) : (
-                <Link
-                    to={node.path}
-                    className="h-8 w-full flex flex-row justify-start items-center gap-2 px-2 font-normal"
-                    title={node.path}
-                >
-                    <span className="w-4 shrink-0" />
-                    <Newspaper className="size-4 shrink-0 text-muted-foreground" />
-                    <span className="truncate">{node.name}</span>
-
-                </Link>
-            )}
+                    {node.isFile ? (
+                        <Link to={node.path} title={node.path}
+                            className="h-8 min-w-0 flex-1 flex items-center gap-2 rounded-md px-2 text-sm hover:bg-accent">
+                            {label}
+                        </Link>
+                    ) : (
+                        <CollapsibleTrigger render={
+                            <Button variant="ghost" className="h-8 min-w-0 flex-1 justify-start gap-2 px-2 font-normal">
+                                {label}
+                                <span className="ml-auto text-xs text-muted-foreground">{node.children.length}</span>
+                            </Button>
+                        } />
+                    )}
+                </div>
+                <CollapsibleContent>
+                    <div className="ml-4 border-l pl-3">
+                        {node.children.map((child) => <TreeItem key={child.path} node={child} />)}
+                    </div>
+                </CollapsibleContent>
+            </Collapsible>
         </div>
-    );
+    )
 }
 
 export function FileTree({

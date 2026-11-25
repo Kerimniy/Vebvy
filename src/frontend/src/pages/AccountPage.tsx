@@ -22,28 +22,32 @@ export default function AccountPage() {
 
   return (
 
-    
+    <div className="flex-col flex items-center gap-4 p-6">
+      <Card className="w-full p-4 items-center">
+        <AccountInfo />
+      </Card>
 
-        <div className="flex-col flex items-center gap-4 p-6">
-          <Card className="w-full p-4 items-center">
-            <AccountInfo />
-          </Card>
+      <Card className="w-full p-4 items-center">
+        <ChangePassword />
+      </Card>
 
-          <Card className="w-full p-4 items-center">
-            <ChangePassword />
-          </Card>
+      <Card className="w-full p-4 ">
 
-          <Card className="w-full p-4 ">
-
-            <div><Button onClick={async () => { setIsLoading(true); await authService.logout(() => setIsLoading(false)); updateUser(); navigate("/") }}>
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-
-              Log out
-            </Button></div>
-          </Card>
-
+        <div>
+          <Button onClick={async () => {
+            setIsLoading(true)
+            await authService.logout()
+            await updateUser()
+            navigate("/")
+          }}>
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Log out
+          </Button>
         </div>
-     
+      </Card>
+
+    </div>
+
   );
 }
 
@@ -88,27 +92,19 @@ export function ChangePassword() {
   const isDisabled = isLoading || !isFormValid;
 
   const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setStatus(null);
-
-    const payload: ChangePasswordData = {
-      currentPassword: current,
-      newPassword: next,
-    };
-
+    e.preventDefault()
+    setIsLoading(true)
+    setStatus(null)
     try {
-      await authService.changePassword(payload);
-      setStatus({ text: "Password changed", isError: false });
-      setCurrent("");
-      setNext("");
-      setRepeat("");
-    } catch (err: any) {
-      setStatus({ text: err.message || "Password change failed", isError: true });
+      await authService.changePassword({ currentPassword: current, newPassword: next })
+      setStatus({ text: "Password changed", isError: false })
+      setCurrent(""); setNext(""); setRepeat("")
+    } catch (err) {
+      setStatus({ text: err instanceof Error ? err.message : "Password change failed", isError: true })
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   return (
     <section className="max-w-2xl w-full">

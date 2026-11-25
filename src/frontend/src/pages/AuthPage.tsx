@@ -32,7 +32,7 @@ export default function AuthPage() {
     const isCodeValid = code.length === 6;
 
     const isLoginDisabled = isLoading || !validateEmail(email) || !isPasswordValid;
-    const isRegisterDisabled = isLoading || !validateEmail(email) || !isPasswordValid || !isCodeValid ;
+    const isRegisterDisabled = isLoading || !validateEmail(email) || !isPasswordValid || !isCodeValid;
     const isResetDisabled = isLoading || !validateEmail(email) || !isPasswordValid || !isCodeValid;
 
     const startRequest = () => {
@@ -41,89 +41,65 @@ export default function AuthPage() {
     };
 
     const registerSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        startRequest();
-
-        const regPayload: RegisterData = {
-            email: email,
-            password: password,
-            code: code
-        };
-
+        e.preventDefault()
+        startRequest()
         try {
-            const result = await authService.register(regPayload);
-            setStatusMessage({ text: "Success", isError: !result.ok });
-            updateUser()
+            await authService.register({ email, password, code })
+            setStatusMessage({ text: "Success", isError: false })
+            await updateUser()
             navigate("/")
-        } catch (err: any) {
-            setStatusMessage({ text: err.message || "error", isError: true });
+        } catch (err) {
+            setStatusMessage({ text: err instanceof Error ? err.message : "Registration error", isError: true })
         } finally {
-            setIsLoading(false);
+            setIsLoading(false)
         }
-    };
+    }
 
     const loginSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        startRequest();
-
-        const loginPayload: LoginData = {
-            email: email,
-            password: password,
-        };
-
+        e.preventDefault()
+        startRequest()
         try {
-            const result = await authService.login(loginPayload);
-            setStatusMessage({ text: "Success", isError: !result.ok });
-            updateUser()
+            await authService.login({ email, password })
+            setStatusMessage({ text: "Success", isError: false })
+            await updateUser()
             navigate("/")
-        } catch (err: any) {
-            setStatusMessage({ text: err.message || "Error", isError: true });
+        } catch (err) {
+            setStatusMessage({ text: err instanceof Error ? err.message : "Login error", isError: true })
         } finally {
-            setIsLoading(false);
+            setIsLoading(false)
         }
-    };
+    }
 
     const resetSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        startRequest();
-
-        const resetPayload: ResetPasswordData = {
-            email: email,
-            code: code,
-            newPassword: password,
-        };
-
+        e.preventDefault()
+        startRequest()
         try {
-            const result = await authService.resetPassword(resetPayload);
-            setStatusMessage({ text: "Success", isError: !result.ok });
-        } catch (err: any) {
-            setStatusMessage({ text: err.message || "Password reset error", isError: true });
+            await authService.resetPassword({ email, code, newPassword: password })
+            setStatusMessage({ text: "Password changed, sign in", isError: false })
+            navigate("/-/auth/sign-in")
+        } catch (err) {
+            setStatusMessage({ text: err instanceof Error ? err.message : "Password reset error", isError: true })
         } finally {
-            setIsLoading(false);
+            setIsLoading(false)
         }
-    };
+    }
 
     const handleSendCode = async () => {
         if (!validateEmail(email)) {
-            setStatusMessage({ text: "Enter valid email", isError: true });
-            return;
+            setStatusMessage({ text: "Enter valid email", isError: true })
+            return
         }
-        setIsLoading(true);
-        setStatusMessage(null);
+        setIsLoading(true)
+        setStatusMessage(null)
         try {
-            let res = await authService.sendCode()
-            console.log(res.ok)
-            if (!res.ok){
-                throw new Error(res.statusText)
-            }
-
-            setStatusMessage({ text: "Code has been sent", isError: false });
-        } catch (err: any) {
-            setStatusMessage({ text: "Code has not been sent", isError: true });
+            await authService.sendCode()
+            setStatusMessage({ text: "Code has been sent", isError: false })
+        } catch (err) {
+            setStatusMessage({ text: err instanceof Error ? err.message : "Code has not been sent", isError: true })
         } finally {
-            setIsLoading(false);
+            setIsLoading(false)
         }
-    };
+    }
 
     return (
         <div className="flex-col flex gap-4 w-full justify-center items-center min-h-[500px]">
@@ -151,7 +127,7 @@ export default function AuthPage() {
                                 placeholder="Email"
                                 type="email"
                                 value={email}
-                                onChange={(e) =>{console.log() ; setEmail(e.target.value)}}
+                                onChange={(e) => { console.log(); setEmail(e.target.value) }}
                                 required
                             />
                             <PasswordInput
@@ -208,7 +184,7 @@ export default function AuthPage() {
 
                                 <div className="text-right">
                                     <Link to="/-/auth/reset" className="text-xs text-muted-foreground hover:text-primary hover:underline">
-                                       Reset password
+                                        Reset password
                                     </Link>
                                 </div>
 

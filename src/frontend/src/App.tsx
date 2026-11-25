@@ -29,23 +29,19 @@ export default function App() {
   }, [location.pathname])
 
   useEffect(() => {
-
     cleanExpiredCache()
-
-    try {
-      fetch(`${BACKEND_BASE_URL}/api/generate-204`).then((res) => {
-        if (res.ok) {
-          setBackendStatus(true)
-        }
-        else {
-          setBackendStatus(false)
-
-        }
-      })
+    const ctrl = new AbortController()
+    const ping = async () => {
+      try {
+        const res = await fetch(`${BACKEND_BASE_URL}/api/generate-204`, { signal: ctrl.signal })
+        setBackendStatus(res.ok)
+      } catch {
+        if (!ctrl.signal.aborted) setBackendStatus(false)
+      }
     }
-    catch (err) {
-      setBackendStatus(false)
-    }
+    ping()
+    const id = setInterval(ping, 30_000)
+    return () => { ctrl.abort(); clearInterval(id) }
   }, [])
 
   return (

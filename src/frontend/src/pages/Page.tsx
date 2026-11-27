@@ -18,7 +18,7 @@ import { HEADER_ICON_PATH, PAGE_TITLE, SIDEBAR_ICON_PATH } from "@/config";
 import { ContextMenu } from "@/components/ContextMenu";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
-import { RequireAuth, useAuth, type UserStruct } from "@/components/Auth";
+import { RequireAuth, RequireSetup, useAuth, type UserStruct } from "@/components/Auth";
 import { Routes, Route } from "react-router-dom";
 import Content from "./Content";
 import AccountPage from "./AccountPage";
@@ -42,23 +42,23 @@ const docsPages: { name: string, location: string, icon: LucideIcon }[] = [
 ]
 
 function TocSection() {
-  const { items, activeId } = useToc()
-  if (items.length === 0) return null
-  return (
-    <SidebarGroup className="flex-start text-left">
-      <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-      <SidebarGroupContent className="ml-3">
-        {items.map(el => (
-          <div key={el.id}>
-            <Link className={`index-el index-${el.type} ${activeId === el.id ? "text-primary font-bold" : ""}`} to={`#${el.id}`}>{el.title}</Link>
-          </div>
-        ))}
-      </SidebarGroupContent>
-    </SidebarGroup>
-  )
+    const { items, activeId } = useToc()
+    if (items.length === 0) return null
+    return (
+        <SidebarGroup className="flex-start text-left">
+            <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+            <SidebarGroupContent className="ml-3">
+                {items.map(el => (
+                    <div key={el.id}>
+                        <Link className={`index-el index-${el.type} ${activeId === el.id ? "text-primary font-bold" : ""}`} to={`#${el.id}`}>{el.title}</Link>
+                    </div>
+                ))}
+            </SidebarGroupContent>
+        </SidebarGroup>
+    )
 }
 
-function AppSidebar({user, backendStatus }: {user: UserStruct | null, backendStatus: boolean }) {
+function AppSidebar({ user, backendStatus }: { user: UserStruct | null, backendStatus: boolean }) {
     const location = useLocation()
     return (
         <Sidebar className="top-(--header-height) h-[calc(100svh-var(--header-height))]!">
@@ -122,7 +122,7 @@ function AppSidebar({user, backendStatus }: {user: UserStruct | null, backendSta
                 }
 
                 <TocSection />
-                
+
 
                 <SidebarGroup className="h-full flex justify-end">
                     <Link to="/-/docs/about" className="flex flex-col w-full justify-center items-center">
@@ -218,13 +218,15 @@ export default function Page({ backendStatus }: { backendStatus: boolean }) {
                     )}
 
                     <main className="flex min-h-0 min-w-0 flex-1 flex-col">
-                        <Routes>
-                            <Route path="/*" element={<Content />}></Route>
-                            <Route path="/-/settings" element={<RequireAuth><AccountPage></AccountPage></RequireAuth>}></Route>
-                            <Route path="/-/edit" element={<RequireAuth><EditorPage setStatus={setStatus}></EditorPage></RequireAuth>}></Route>
-                            <Route path="/-/index" element={<IndexPage></IndexPage>}></Route>
-                            <Route path="/-/auth/*" element={<AuthPage></AuthPage>}></Route>
-                        </Routes>
+                        <RequireSetup>
+                            <Routes>
+                                <Route path="/*" element={<Content />}></Route>
+                                <Route path="/-/settings" element={<RequireAuth><AccountPage></AccountPage></RequireAuth>}></Route>
+                                <Route path="/-/edit" element={<RequireAuth><EditorPage setStatus={setStatus}></EditorPage></RequireAuth>}></Route>
+                                <Route path="/-/index" element={<IndexPage></IndexPage>}></Route>
+                                <Route path="/-/auth/*" element={<AuthPage></AuthPage>}></Route>
+                            </Routes>
+                        </RequireSetup>
 
                     </main>
                 </SidebarInset>

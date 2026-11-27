@@ -1,6 +1,6 @@
 import type { ReactNode } from "react"
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react"
-import { Navigate } from "react-router-dom"
+import { Navigate, useLocation } from "react-router-dom"
 import { BACKEND_BASE_URL } from "@/config"
 import { Spinner } from "./ui/spinner"
 
@@ -46,6 +46,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(() => ({ ...state, updateUser }), [state, updateUser])
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+}
+
+export function RequireSetup({ children }: { children: ReactNode }) {
+    const { adminExists, loading } = useAuth()
+    const location = useLocation()
+
+    if (loading) return <Spinner />
+    if (!adminExists && !location.pathname.startsWith("/-/auth")) {
+        return <Navigate to="/-/auth/sign-up" replace />
+    }
+    return <>{children}</>
 }
 
 export function RequireAuth({ children }: { children: ReactNode }) {
